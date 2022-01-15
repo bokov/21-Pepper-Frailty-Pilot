@@ -293,6 +293,7 @@ SELECT q0.PAT_ID,q0.Mon
 FROM EFI_PatDateGrp q0 LEFT JOIN EFI_PatDateGrp q1 
 ON q0.PAT_ID = q1.PAT_ID AND q1.Mon BETWEEN q0.Window12Mo AND q0.Mon
 GROUP BY q0.PAT_ID,q0.Mon;
+-- 153.466	0.0	1671762
 -- 325.722	0.0	6056418
 
 --/
@@ -318,7 +319,7 @@ SELECT * FROM TMP_Pat_Diag03 WHERE ROWNUM <= 100
 BEGIN
         FOR chunk_24mo IN 1..9
                 LOOP
-                        INSERT INTO TMP_EFI_24mo
+                        INSERT INTO TMP_EFI_24mo (PAT_ID,Mon,Months24Mo,Frail24Mo)
                         SELECT q0.PAT_ID,q0.Mon
                                 ,COUNT(DISTINCT q1.Mon) Months24Mo
                                 ,COUNT(DISTINCT q1.GRP) Frail24Mo
@@ -327,14 +328,18 @@ BEGIN
                         AND q1.Mon BETWEEN q0.Window24Mo AND q0.Mon
                         WHERE SUBSTR(q0.PAT_ID,-1) = TO_CHAR(chunk_24mo)
                         GROUP BY q0.PAT_ID,q0.Mon;
-                        
-                        SELECT 'Chunk:',chunk_24mo FROM DUAL;
                 END LOOP;
 END;
 /
+-- 
 
 -- Final frailty results
-DROP TABLE IF EXISTS EFI_Frailty;
+--/
+BEGIN
+   EXECUTE IMMEDIATE 'DROP TABLE EFI_Frailty';
+   EXCEPTION WHEN OTHERS THEN IF SQLCODE != -942 THEN RAISE; END IF;
+END;
+/
 SELECT efi24.PAT_ID,efi24.Mon,Months6mo,Frail6mo,Months12Mo,Frail12Mo,Months24Mo,Frail24Mo
 INTO EFI_Frailty
 FROM TMP_EFI_24mo efi24 
